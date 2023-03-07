@@ -1,6 +1,7 @@
 package nl.quintor.securityhandson.config;
 
-import nl.quintor.securityhandson.security.HTTPBasicAuthFilter;
+import nl.quintor.securityhandson.security.JWTFilter;
+import nl.quintor.securityhandson.security.JWTProvider;
 import nl.quintor.securityhandson.security.UnauthenticatedHandler;
 import nl.quintor.securityhandson.security.UserAccessDeniedHandler;
 import org.springframework.context.annotation.Bean;
@@ -23,13 +24,14 @@ import javax.sql.DataSource;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManager authenticationManager) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JWTProvider jwtProvider) throws Exception {
         http
                 .authorizeHttpRequests(r -> {
                     r.requestMatchers("/hello_world").hasRole("WORLD");
                     r.requestMatchers("/hello_universe").hasRole("UNIVERSE");
+                    r.requestMatchers("/login").permitAll();
                 })
-                .addFilterBefore(new HTTPBasicAuthFilter(authenticationManager), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JWTFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(e -> {
                     e.authenticationEntryPoint(new UnauthenticatedHandler());
@@ -43,9 +45,9 @@ public class SecurityConfig {
     /**
      * Op deze manier kunnen we de gebruikte AuthenticationManager beschikbaar stellen als bean,
      * zodat we die makkelijk kunnen injecteren waar we maar willen.
+     *
      * @param authenticationConfiguration Een export van de authenticatie configuratie
      * @return De gebruikte AuthenticationManager
-     * @throws Exception
      */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
@@ -53,13 +55,19 @@ public class SecurityConfig {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
+    /**
+     * We maken hier een UserDetailsService die via JDBC de gebruikers ophaalt.
+     */
     @Bean
     public UserDetailsService userDetailsService(DataSource dataSource) {
         return new JdbcUserDetailsManager(dataSource);
     }
 
+    /**
+     * De standaard password encoder om te gebruiken
+     */
     @Bean
-    public PasswordEncoder passwordEncoder(){
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 }
