@@ -43,9 +43,9 @@ public class SecurityConfig {
     /**
      * Op deze manier kunnen we de gebruikte AuthenticationManager beschikbaar stellen als bean,
      * zodat we die makkelijk kunnen injecteren waar we maar willen.
+     *
      * @param authenticationConfiguration Een export van de authenticatie configuratie
      * @return De gebruikte AuthenticationManager
-     * @throws Exception
      */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
@@ -53,13 +53,19 @@ public class SecurityConfig {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
+    /**
+     * We maken hier een UserDetailsService die via JDBC de gebruikers ophaalt.
+     */
     @Bean
     public UserDetailsService userDetailsService(DataSource dataSource) {
         return new JdbcUserDetailsManager(dataSource);
     }
 
+    /**
+     * De standaard password encoder om te gebruiken
+     */
     @Bean
-    public PasswordEncoder passwordEncoder(){
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 }
